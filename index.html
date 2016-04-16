@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 	<head>
 		<meta charset="utf-8" />
 		<meta name="renderer" content="webkit">
@@ -104,7 +103,7 @@
 				try {
 					this.ac = new AudioContext();
 				} catch (err) {
-					alert('!Your browser does not support AudioContext, Please see the console for more information!');
+					alert('!Your browser does not support AudioContext, Please change to Chrome or Firefox!');
 					console.log(err);
 				};
 					
@@ -264,7 +263,7 @@
 				canvas = document.getElementById('drawCanvas'),
 			    cwidth = canvas.width,
 			    cheight = canvas.height,
-			    num = 50,		//能量球的数量
+			    num = 40,		//能量球的数量
 				sphere = [],	//能量球的半径应根据数量和画布大小而确定
 			    ctx = canvas.getContext('2d');
 			    
@@ -275,7 +274,7 @@
 				for (var i = 0; i < num; i++) {
 					var x = random(0, cwidth),
 						y = random(0, cheight),
-						color = "rgba(" + random(0, 255) + "," + random(0, 255) + "," + random(0, 255) + ",0)";
+						color = "rgba(" + random(0, 255) + "," + random(0, 255) + "," + random(0, 255) + ",0.2)";
 					sphere.push({
 						x: x,
 						y: y,
@@ -287,19 +286,34 @@
 				var drawMeter = function() {
 			    	var array = new Uint8Array(analyser.frequencyBinCount);
 			    	analyser.getByteFrequencyData(array);
+			    	if (that.status === 0) {
+		                //fix when some sounds end the value still not back to zero
+		                var allBallstoZero = true;
+		                for (var i = array.length - 1; i >= 0; i--) {
+		                    allBallstoZero = allBallstoZero && ( array [i] < 1);
+		                };
+		                if (allBallstoZero) {
+		                    cancelAnimationFrame(that.animationId); //since the sound is top and animation finished, stop the requestAnimation to prevent potential memory leak,THIS IS VERY IMPORTANT!
+		                    return;
+		                };
+	            	};
 			    	var step = Math.round(array.length / num); //sample limited data from the total array
 			    	ctx.clearRect(0, 0, cwidth, cheight);
 			    	for (var n = 0; n < num; n++) {
-			    		var r = 10 + Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 30 : cheight / 20));
+			    		var r = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 18 : cheight / 14));
 			    		var s = sphere[n];
 			    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
 			    		gradient.addColorStop(0, "#fff");
+			    		gradient.addColorStop(0.4, "#D0C2C2");
 			    		gradient.addColorStop(1, s.color);
 			    		ctx.fillStyle = gradient;
 			    		ctx.beginPath();
 			    		ctx.arc(sphere[n].x, sphere[n].y, r, 0, Math.PI*2, true);
-			    		s.y = s.y - 2 * s.dy;
-			    		s.y = s.y <= 0 ? cheight : s.y;
+			    		s.y = s.y - 1.5 * s.dy;
+			    		if (s.y <= 0) {
+			    			s.y = cheight;
+			    			s.x = random(0, cwidth);
+			    		}
 			    		ctx.fill();
 			    	}
 			    	
