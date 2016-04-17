@@ -71,6 +71,7 @@
 		 * 4, buff.connect(ana), ana.connect(audioContext.destination), buff.buffer = buffer, buff.start(0); for output
 		 * 5, use ana to do analysis.
 		 */
+		
 		var mymv;
 		window.onload = function() {
 			var canvas = document.getElementById('drawCanvas');
@@ -96,6 +97,19 @@
 				}
 			};
 			
+			//测试绘图样式
+//			canvas.onclick = function (ev) {
+//				var ctx = canvas.getContext('2d');
+//				var gradient = ctx.createRadialGradient(ev.x, ev.y, 0, ev.x, ev.y, 60);
+//	    		gradient.addColorStop(0, "#fff");
+//	    		gradient.addColorStop(0.5, "#D8C3C6");
+//	    		//gradient.addColorStop(0.5,"#DCABB2");
+//	    		gradient.addColorStop(1, "rgba(14,216,102,0)");
+//	    		ctx.fillStyle = gradient;
+//	    		ctx.beginPath();
+//	    		ctx.arc(ev.x, ev.y, 60, 0, Math.PI*2, true);
+//				ctx.fill();
+//			};
 			
 		};
 		
@@ -342,7 +356,8 @@
 			    		s.radius = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 25 : cheight / 18));
 			    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.radius);
 			    		gradient.addColorStop(0, "#fff");
-			    		gradient.addColorStop(0.4, "#D0C2C2");
+//			    		gradient.addColorStop(0.6, "#D0C2C2");
+			    		gradient.addColorStop(0.5, "#D8C3C6");
 			    		gradient.addColorStop(1, s.color);
 			    		ctx.fillStyle = gradient;
 			    		ctx.beginPath();
