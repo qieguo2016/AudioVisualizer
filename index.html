@@ -91,9 +91,9 @@
 			canvas.onmousemove = function (e) {
 				for (var n = 0; n < mymv.visualizer.length; n++) {
 					var s = mymv.visualizer[n];
-					if (Math.sqrt(Math.pow(s.x-e.x,2) + Math.pow(s.y-e.y,2)) < s.radius) {
-						s.x = e.x;
-						s.y = e.y;
+					if (Math.sqrt(Math.pow(s.x-e.pageX,2) + Math.pow(s.y-e.pageY,2)) < s.radius) {
+						s.x = e.pageX;
+						s.y = e.pageY;
 					}
 				}
 			};
