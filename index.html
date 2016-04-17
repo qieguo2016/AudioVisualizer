@@ -6,7 +6,7 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 		<meta name="Keywords" content="音乐可视化,webAudio,music,音乐,HTML5,canvas,CSS3,自适应">
 		<meta name="Description" content="利用HTML5 webAudio API 和canvas API以及CSS3制作音乐播放可视化效果">
-		<meta name="Author" content="Doving & XQ">
+		<meta name="Author" content="Wayou & QG">
 		<title>HTML5 Audio API Demo</title>
 		<style type="text/css">
 			html,
@@ -14,7 +14,7 @@
 				margin: 0;
 				padding: 0;
 				font-family: arial, "Microsoft YaHei";
-				font-size: 14px;
+				font-size: 16px;
 				background-color: #272822;
 				color: #FEFEFE;
 			}
@@ -22,27 +22,34 @@
 			div.msg {
 				position: fixed;
 				left: 5px;
-				bottom: 5px;
-				/*width: 500px;
-				height: 300px;*/
-				/*background-color: #87CEEB;*/
+				top: 5px;
 			}
-			
-			#info,#uploader{    
+			#info{    
 				padding: 0;
     			margin: 1px;
     		}
+    		#fileIn {
+    			text-decoration: underline;
+    			color: #36B953;
+    		}
+    		#fileIn:hover {
+    			cursor: pointer;
+    			color: #FF00B4;
+    		}
+    		#uploader {
+    			display: none;
+    		}
 			
-			#drawCanvas{
-				/*border: 1px solid blue;*/
-			}
 		</style>
 	</head>
 
 	<body>
 		<div id="container">
 			<div class="msg">
-				<p id="info">Open Mp3 file:</p>
+				<p id="info">HTML5 Audio visualizer</p>
+				<span id="fileIn">
+					Click me to select an audio file.
+				</span>
 				<input type="file" id="uploader" />
 			</div>
 			<canvas id="drawCanvas" width="" height=""></canvas>
@@ -50,7 +57,7 @@
 
 		<script type="text/javascript">
 		"use strict"
-		window.innerHeight
+		
 		/*
 		 * I learned this HTML5 Audio API from liuwayong's blog:
 		 * http://www.cnblogs.com/Wayou/p/html5_audio_api_visualizer.html
@@ -64,11 +71,44 @@
 		 * 4, buff.connect(ana), ana.connect(audioContext.destination), buff.buffer = buffer, buff.start(0); for output
 		 * 5, use ana to do analysis.
 		 */
+		var mymv;
 		window.onload = function() {
-			setWin();
+			var canvas = document.getElementById('drawCanvas');
+			canvas.width = window.clientWidth
+						   || document.documentElement.clientWidth
+						   || document.body.clientWidth;
+			canvas.height = window.clientHeight
+							|| document.documentElement.clientHeight
+							|| document.body.clientHeight;
+							
 			//浏览器加载时初始化MV对象
-			new MV().init();
+			mymv = new MV();
+			mymv.init();
+			
+			//鼠标捕捉能量球
+			canvas.onmousemove = function (e) {
+				for (var n = 0; n < mymv.visualizer.length; n++) {
+					var s = mymv.visualizer[n];
+					if (Math.sqrt(Math.pow(s.x-e.x,2) + Math.pow(s.y-e.y,2)) < s.radius) {
+						s.x = e.x;
+						s.y = e.y;
+					}
+				}
+			};
+			
+			
 		};
+		
+		window.onresize = function () {
+			var canvas = document.getElementById('drawCanvas');
+			canvas.width = window.clientWidth
+						   || document.documentElement.clientWidth
+						   || document.body.clientWidth;
+			canvas.height = window.clientHeight
+							|| document.documentElement.clientHeight
+							|| document.body.clientHeight;			
+		};
+		
 		//定义MV对象的属性
 		var MV = function() {
 			this.files = null;		//Music Visualize对象的文件
@@ -78,20 +118,10 @@
 			this.forceStop = false; 	//强制终止播放状态
 			this.animationId = null;	//动画ID
 			this.source = null;			//流媒体的源
+			this.visualizer = [];		//x,y,dy,color,radius
 		};
 		
-		function setWin () {
-			var canvas = document.getElementById('drawCanvas');
-			canvas.width = window.clientWidth
-						   || document.documentElement.clientWidth
-						   || document.body.clientWidth;
-//			canvas.width -= 20;
-			canvas.height = window.clientHeight
-							|| document.documentElement.clientHeight
-							|| document.body.clientHeight;
-//			canvas.height -= 20;
-			
-		}
+		
 		
 		//定义MV对象方法
 		MV.prototype = {
@@ -107,9 +137,13 @@
 					console.log(err);
 				};
 					
-				//add a eventListener for <inputfile id = uploader>
+				//add a eventListener for inputfile, inputfile is hidden.
 				var that = this,
+					btn = document.getElementById("fileIn"),
 					audioInput = document.getElementById("uploader");
+				btn.onclick = function () {
+					audioInput.click();
+				};
 				audioInput.onchange = function() {
 					if (that.ac === null) {return;};	//new AudioContext失败，则退出函数
 					//the if statement fixes the file selction cancle, because the onchange will trigger even the file selection been canceled
@@ -171,7 +205,7 @@
 		        //connect the analyser to the destination(the speaker), or we won't hear the sound
 		        analyser.connect(audioContext.destination);
 		        bufferSouceNode.buffer = buffer;
-		        
+		        bufferSouceNode.loop = true;
 		        //play the source
 		        if (!bufferSouceNode.start) {
 		            bufferSouceNode.start = bufferSouceNode.noteOn //in old browsers use noteOn method
@@ -263,23 +297,22 @@
 				canvas = document.getElementById('drawCanvas'),
 			    cwidth = canvas.width,
 			    cheight = canvas.height,
-			    num = 40,		//能量球的数量
-				sphere = [],	//能量球的半径应根据数量和画布大小而确定
+			    num = 50,		//能量球的数量
 			    ctx = canvas.getContext('2d');
 			    
 				var random = function (m, n) {
 					return Math.round(Math.random()*(n - m) + m);
 				};
-				sphere = [];
 				for (var i = 0; i < num; i++) {
 					var x = random(0, cwidth),
 						y = random(0, cheight),
 						color = "rgba(" + random(0, 255) + "," + random(0, 255) + "," + random(0, 255) + ",0.2)";
-					sphere.push({
+					that.visualizer.push({
 						x: x,
 						y: y,
-						dy: 0.5 * Math.random() + 0.1,
-						color: color
+						dy: Math.random() + 0.1,
+						color: color,
+						radius: 30
 					});
 				}
 				
@@ -288,36 +321,40 @@
 			    	analyser.getByteFrequencyData(array);
 			    	if (that.status === 0) {
 		                //fix when some sounds end the value still not back to zero
-		                var allBallstoZero = true;
 		                for (var i = array.length - 1; i >= 0; i--) {
-		                    allBallstoZero = allBallstoZero && ( array [i] < 1);
+		                    array[i] = 0;
+		                };
+		                var allBallstoZero = true;
+		                for (var i = that.visualizer.length - 1; i >= 0; i--) {
+		                    allBallstoZero = allBallstoZero && ( that.visualizer[i].radius < 1);
 		                };
 		                if (allBallstoZero) {
 		                    cancelAnimationFrame(that.animationId); //since the sound is top and animation finished, stop the requestAnimation to prevent potential memory leak,THIS IS VERY IMPORTANT!
 		                    return;
 		                };
 	            	};
-			    	var step = Math.round(array.length / num); //sample limited data from the total array
+			    	var step = Math.round(array.length / (num + 10)), //sample limited data from the total array
+			    		cwidth = canvas.width,
+			    		cheight = canvas.height;
 			    	ctx.clearRect(0, 0, cwidth, cheight);
 			    	for (var n = 0; n < num; n++) {
-			    		var r = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 18 : cheight / 14));
-			    		var s = sphere[n];
-			    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+			    		var s = that.visualizer[n];
+			    		s.radius = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 25 : cheight / 18));
+			    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.radius);
 			    		gradient.addColorStop(0, "#fff");
 			    		gradient.addColorStop(0.4, "#D0C2C2");
 			    		gradient.addColorStop(1, s.color);
 			    		ctx.fillStyle = gradient;
 			    		ctx.beginPath();
-			    		ctx.arc(sphere[n].x, sphere[n].y, r, 0, Math.PI*2, true);
-			    		s.y = s.y - 1.5 * s.dy;
-			    		if (s.y <= 0) {
+			    		ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2, true);
+//			    		ctx.closePath();
+						ctx.fill();
+			    		s.y = s.y - 2 * s.dy;
+			    		if ((s.y <= 0)&&(that.status != 0)) {
 			    			s.y = cheight;
 			    			s.x = random(0, cwidth);
 			    		}
-			    		ctx.fill();
 			    	}
-			    	
-			    	
 				 	that.animationId = requestAnimationFrame(drawMeter); 
 		        };
 		        this.animationId = requestAnimationFrame(drawMeter);
@@ -330,7 +367,7 @@
 		            return;
 		        };
 		        this.status = 0;
-		        var text = 'HTML5 Audio API showcase | An Audio Viusalizer';
+		        var text = 'HTML5 Audio visualizer';
 		        document.getElementById('info').innerHTML = text;
 		        document.getElementById('uploader').value = '';
 		    },
