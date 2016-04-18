@@ -62,8 +62,8 @@
 		/*
 		 * I learned this HTML5 Audio API from liuwayong's blog:
 		 * http://www.cnblogs.com/Wayou/p/html5_audio_api_visualizer.html
-		 * I use some codes of his demo, and creat a new visualize style.
-		 * For more info you can visit my blog: 
+		 * I used some codes of his demo, and creat a new visualize style.
+		 * For more info you can visit my blog: http://www.cnblogs.com/qieguo/
 		 * or contact me: qieguo.chow@gmail.com
 		 * 核心流程：
 		 * 1, new FileReader().readAsArrayBuffer(file) >>
@@ -89,28 +89,34 @@
 			
 			//鼠标捕捉能量球
 			canvas.onmousemove = function (e) {
-				for (var n = 0; n < mymv.visualizer.length; n++) {
-					var s = mymv.visualizer[n];
-					if (Math.sqrt(Math.pow(s.x-e.pageX,2) + Math.pow(s.y-e.pageY,2)) < s.radius) {
-						s.x = e.pageX;
-						s.y = e.pageY;
+				if (mymv.status != 0) {
+					for (var n = 0; n < mymv.visualizer.length; n++) {
+						var s = mymv.visualizer[n];
+						if (Math.sqrt(Math.pow(s.x-e.pageX,2) + Math.pow(s.y-e.pageY,2)) < s.radius) {
+							s.x = e.pageX;
+							s.y = e.pageY;
+						}
 					}
 				}
+				
 			};
 			
 			//测试绘图样式
-//			canvas.onclick = function (ev) {
-//				var ctx = canvas.getContext('2d');
-//				var gradient = ctx.createRadialGradient(ev.x, ev.y, 0, ev.x, ev.y, 60);
-//	    		gradient.addColorStop(0, "#fff");
-//	    		gradient.addColorStop(0.5, "#D8C3C6");
-//	    		//gradient.addColorStop(0.5,"#DCABB2");
-//	    		gradient.addColorStop(1, "rgba(14,216,102,0)");
-//	    		ctx.fillStyle = gradient;
-//	    		ctx.beginPath();
-//	    		ctx.arc(ev.x, ev.y, 60, 0, Math.PI*2, true);
-//				ctx.fill();
-//			};
+			canvas.onclick = function (ev) {
+				if (mymv.status === 0) {
+					var ctx = canvas.getContext('2d');
+					var gradient = ctx.createRadialGradient(ev.pageX, ev.pageY, 0, ev.pageX, ev.pageY, 60);
+		    		gradient.addColorStop(0, "#fff");
+	//	    		gradient.addColorStop(0.5,"#D88A94");#CCB5B8  #D2BEC0
+					gradient.addColorStop(0.5,"#D2BEC0");
+		    		gradient.addColorStop(0.75,"rgba(14,216,102,0.4)");
+		    		gradient.addColorStop(1, "rgba(14,216,102,0)");
+		    		ctx.fillStyle = gradient;
+		    		ctx.beginPath();
+		    		ctx.arc(ev.pageX, ev.pageY, 60, 0, Math.PI*2, true);
+					ctx.fill();
+				}
+			};
 			
 		};
 		
@@ -151,7 +157,6 @@
 					alert('!Your browser does not support AudioContext, Please change to Chrome or Firefox!');
 					console.log(err);
 				};
-					
 				//add a eventListener for inputfile, inputfile is hidden.
 				var that = this,
 					btn = document.getElementById("fileIn"),
@@ -170,11 +175,7 @@
 							//the sound is still playing but we upload another file, so set the forceStop flag to true
 							that.forceStop = true;
 						};
-						//document.getElementById('fileWrapper').style.opacity = 1;
-						//that._updateInfo('Uploading', true);
 						//once the file is ready,start the visualizer
-						
-						//console.log(that.fileName);
 						that._read();
 					};
 				};
@@ -185,7 +186,6 @@
 				var that = this,
 					rfile = that.files,
 					fr = new FileReader();
-					
 				fr.onload = function(e) {
 					if (that.ac === null) {
                 		return;
@@ -214,7 +214,6 @@
 				var bufferSouceNode = audioContext.createBufferSource(),
 					analyser = audioContext.createAnalyser(),
 					that = this;
-				
         		//connect the source to the analyser
         		bufferSouceNode.connect(analyser);
 		        //connect the analyser to the destination(the speaker), or we won't hear the sound
@@ -240,8 +239,8 @@
             		that._audioEnd(that);
         		};
         		this._updateInfo('Playing ' + this.fileName, false);
-		        this._visualize_flow(analyser);
-		        //this._visualize(analyser);
+		        this._visualize_flow(analyser);		//能量球样式的可视化效果
+		        //this._visualize(analyser);		//柱状图样式的可视化效果
 			},
 			
 			_visualize: function(analyser) {
@@ -321,7 +320,7 @@
 				for (var i = 0; i < num; i++) {
 					var x = random(0, cwidth),
 						y = random(0, cheight),
-						color = "rgba(" + random(0, 255) + "," + random(0, 255) + "," + random(0, 255) + ",0.2)";
+						color = "rgba(" + random(0, 255) + "," + random(0, 255) + "," + random(0, 255) + ",0)";
 					that.visualizer.push({
 						x: x,
 						y: y,
@@ -358,7 +357,9 @@
 			    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.radius);
 			    		gradient.addColorStop(0, "#fff");
 //			    		gradient.addColorStop(0.6, "#D0C2C2");
-			    		gradient.addColorStop(0.5, "#D8C3C6");
+//			    		gradient.addColorStop(0.5, "#D8C3C6");
+			    		gradient.addColorStop(0.5,"#D2BEC0");
+			    		gradient.addColorStop(0.75, s.color.substring(0, s.color.lastIndexOf(","))+",0.4)");
 			    		gradient.addColorStop(1, s.color);
 			    		ctx.fillStyle = gradient;
 			    		ctx.beginPath();
