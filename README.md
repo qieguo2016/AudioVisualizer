@@ -8,4 +8,6 @@ You can see the the demo on the project page: http://qieguo2016.github.io/AudioV
 
 This demo is base on wayou Liu's article. You can see his page: http://wayou.github.io/MeowmeowPlayer/
 
-
+Screenshot
+---
+![alt tag](https://github.com/QieGuo2016/AudioVisualizer/blob/master/resource/Screenshot.gif?raw=true)
