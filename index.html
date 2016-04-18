@@ -298,7 +298,7 @@
 		            }
 			    	//这个与后面一句区别在this和that。严格模式下播放时this为undefined，一般模式下this指向window。
 			    	//_visualize，_audioEnd这些为MV的方法，所以函数内部this指向MV，但其内部嵌套的函数并非MV的函数，其原型为window！
-			    	//所以在进入嵌套函数内部时，this已经被改变了，所以才需要用一个that来保存this的指向对象MV
+			    	//所以在进入嵌套函数内部时，this已经被改变了，需要用一个that来保存this的指向对象MV
 		            that.animationId = requestAnimationFrame(drawMeter); 
 		        };
 		        this.animationId = requestAnimationFrame(drawMeter);
