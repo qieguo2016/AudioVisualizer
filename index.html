@@ -9,39 +9,7 @@
 		<meta name="Author" content="Wayou & QG">
 		<title>HTML5 Audio API Demo</title>
 		<link rel="icon" href="resource/cd_blue.png">
-		<style type="text/css">
-			html,
-			body {
-				margin: 0;
-				padding: 0;
-				font-family: arial, "Microsoft YaHei";
-				font-size: 16px;
-				background-color: #272822;
-				color: #FEFEFE;
-			}
-			
-			div.msg {
-				position: fixed;
-				left: 5px;
-				top: 5px;
-			}
-			#info{    
-				padding: 0;
-    			margin: 1px;
-    		}
-    		#fileIn {
-    			text-decoration: underline;
-    			color: #36B953;
-    		}
-    		#fileIn:hover {
-    			cursor: pointer;
-    			color: #FF00B4;
-    		}
-    		#uploader {
-    			display: none;
-    		}
-			
-		</style>
+		<link rel="stylesheet" type="text/css" href="css/index.css"/>			
 	</head>
 
 	<body>
@@ -74,19 +42,25 @@
 		 */
 		
 		var mymv;
-		window.onload = function() {
+		function resizeCanvas () {
 			var canvas = document.getElementById('drawCanvas');
 			canvas.width = window.clientWidth
 						   || document.documentElement.clientWidth
 						   || document.body.clientWidth;
 			canvas.height = window.clientHeight
 							|| document.documentElement.clientHeight
-							|| document.body.clientHeight;
+							|| document.body.clientHeight;			
+		}
+		
+		window.onload = function() {
+			//根据浏览器尺寸设置画布的尺寸
+			resizeCanvas();
 							
 			//浏览器加载时初始化MV对象
 			mymv = new MV();
 			mymv.init();
 			
+			var canvas = document.getElementById('drawCanvas');
 			//鼠标捕捉能量球
 			canvas.onmousemove = function (e) {
 				if (mymv.status != 0) {
@@ -98,37 +72,51 @@
 						}
 					}
 				}
-				
 			};
+			
+			/*触屏设备单指拖动能量球*/
+			canvas.addEventListener('touchmove', function(event) {
+				//判断是否播放状态
+				if (mymv.status != 0) {
+				    // 如果画布内只有一个手指的话
+				    if (event.targetTouches.length == 1) {
+				　　　	event.preventDefault();// 阻止浏览器默认事件，重要 
+				        var touch = event.targetTouches[0];
+				        // 把能量球放在手指所在的位置()
+				        for (var n = 0; n < mymv.visualizer.length; n++) {
+							var s = mymv.visualizer[n];
+							if (Math.sqrt(Math.pow(s.x-touch.pageX,2) + Math.pow(s.y-touch.pageY,2)) < 30) {
+								s.x = touch.pageX;
+								s.y = touch.pageY;  
+							}
+						}
+				    }
+			   	}
+			}, false);
 			
 			//测试绘图样式
 			canvas.onclick = function (ev) {
+				//判断播放状态，不播放的时候才触发
 				if (mymv.status === 0) {
 					var ctx = canvas.getContext('2d');
-					var gradient = ctx.createRadialGradient(ev.pageX, ev.pageY, 0, ev.pageX, ev.pageY, 60);
+					var gradient = ctx.createRadialGradient(ev.pageX, ev.pageY, 0, ev.pageX, ev.pageY, 30);
+					var random = function (m, n) { return Math.round(Math.random()*(n - m) + m); };
+					var color = "rgba(" + random(30, 200) + "," + random(30, 200) + "," + random(30, 200) + ",0)";
 		    		gradient.addColorStop(0, "#fff");
-	//	    		gradient.addColorStop(0.5,"#D88A94");#CCB5B8  #D2BEC0
 					gradient.addColorStop(0.5,"#D2BEC0");
-		    		gradient.addColorStop(0.75,"rgba(14,216,102,0.4)");
-		    		gradient.addColorStop(1, "rgba(14,216,102,0)");
+					gradient.addColorStop(0.75, color.substring(0, color.lastIndexOf(","))+",0.4)");
+			    	gradient.addColorStop(1, color);
 		    		ctx.fillStyle = gradient;
 		    		ctx.beginPath();
-		    		ctx.arc(ev.pageX, ev.pageY, 60, 0, Math.PI*2, true);
+		    		ctx.arc(ev.pageX, ev.pageY, 30, 0, Math.PI*2, true);
 					ctx.fill();
 				}
 			};
 			
 		};
 		
-		window.onresize = function () {
-			var canvas = document.getElementById('drawCanvas');
-			canvas.width = window.clientWidth
-						   || document.documentElement.clientWidth
-						   || document.body.clientWidth;
-			canvas.height = window.clientHeight
-							|| document.documentElement.clientHeight
-							|| document.body.clientHeight;			
-		};
+		//根据浏览器尺寸设置画布的尺寸
+		window.onresize = function () { resizeCanvas(); };
 		
 		//定义MV对象的属性
 		var MV = function() {
@@ -139,7 +127,7 @@
 			this.forceStop = false; 	//强制终止播放状态
 			this.animationId = null;	//动画ID
 			this.source = null;			//流媒体的源
-			this.visualizer = [];		//x,y,dy,color,radius
+			this.visualizer = [];		//频谱表现形式，包含x,y,dy,color,radius
 		};
 		
 		//定义MV对象方法，原型方式
@@ -155,32 +143,31 @@
 					alert('!Your browser does not support AudioContext, Please change to Chrome or Firefox!');
 					console.log(err);
 				};
-				//add a eventListener for inputfile, inputfile is hidden.
+				//隐藏文件输入控件，通过fileIn文本的click事件调用文件输入控件
 				var that = this,
 					btn = document.getElementById("fileIn"),
 					audioInput = document.getElementById("uploader");
-				btn.onclick = function () {
-					audioInput.click();
-				};
+				btn.onclick = function () { audioInput.click(); };
+				//监控文本输入控件的改变，判断是否读入文件或者切换文件
 				audioInput.onchange = function() {
 					if (that.ac === null) {return;};	//new AudioContext失败，则退出函数
-					//the if statement fixes the file selction cancle, because the onchange will trigger even the file selection been canceled
+					//判断是否真正选中文件，因为取消也可以触发onchange事件
 					if (audioInput.files.length !== 0) {
-						//only process the first file
+						//仅获取文件列中的第一个文件
 						that.files = audioInput.files[0];
 						that.fileName = that.files.name;
 						if (that.status === 1) {
-							//the sound is still playing but we upload another file, so set the forceStop flag to true
+							//正在播放的时候切换文件，需要强制停止，将forceStop置为true
 							that.forceStop = true;
 						};
-						//once the file is ready,start the visualizer
+						//当文件准备好的时候，开始读入
 						that._read();
 					};
 				};
 			},
 			
 			_read: function() {
-				//read and decode the file into audio array buffer 
+				//读取文件，并进行解码
 				var that = this,
 					rfile = that.files,
 					fr = new FileReader();
@@ -189,11 +176,12 @@
                 		return;
             		};
 					that._updateInfo('Decoding the audio', true);
-					//new AudioContext().decodeAudioData解码Audio文件，第一个参数为缓冲数列
+					//AudioContext.decodeAudioData解码Audio文件，第一个参数为缓冲数列
 					var fileResult = e.target.result;
 					that.ac.decodeAudioData(fileResult, function(buffer) {
 						that._updateInfo('Decode succussfully,start the visualizer', true);
-						that._control(that.ac, buffer);	//转到播放和分析环节
+						//转到播放和分析环节
+						that._control(that.ac, buffer);	
 					}, function(err) {
 						alert('!Fail to decode the file');
 						console.log(err);
@@ -203,36 +191,38 @@
 	            	alert('!Fail to read the file');
 	            	console.log(err);
 		        };
-		        //assign the file to the reader
         		that._updateInfo('Starting read the file', true);
-        		fr.readAsArrayBuffer(rfile);		//ArrayBuffer方式读取
+        		//ArrayBuffer方式读取
+        		fr.readAsArrayBuffer(rfile);		
 			},
 			
 			_control: function(audioContext, buffer) {
+				//创建BufferSource来保存解码出来的数据流
 				var bufferSouceNode = audioContext.createBufferSource(),
 					analyser = audioContext.createAnalyser(),
 					that = this;
-        		//connect the source to the analyser
+        		//将音源连接起来，音源>分析器>输出
         		bufferSouceNode.connect(analyser);
-		        //connect the analyser to the destination(the speaker), or we won't hear the sound
 		        analyser.connect(audioContext.destination);
 		        bufferSouceNode.buffer = buffer;
 		        bufferSouceNode.loop = true;
-		        //play the source
+		        //启动，也就是启动音频读入>分析>输出这个流程
 		        if (!bufferSouceNode.start) {
-		            bufferSouceNode.start = bufferSouceNode.noteOn //in old browsers use noteOn method
-		            bufferSouceNode.stop = bufferSouceNode.noteOff //in old browsers use noteOn method
+		            bufferSouceNode.start = bufferSouceNode.noteOn //旧版本语法：noteOn
+		            bufferSouceNode.stop = bufferSouceNode.noteOff //旧版本语法：noteOn
         		};
-		        //stop the previous sound if any
+		        //停止前一首歌曲
 		        if (this.animationId !== null) {
 		            cancelAnimationFrame(this.animationId);
 		        }
 		        if (this.source !== null) {
 		            this.source.stop(0);
 		        }
-		        bufferSouceNode.start(0);			//现代播放器都用这个播放
+		        //启动的新版本语法
+		        bufferSouceNode.start(0);		
 		        this.status = 1;
 		        this.source = bufferSouceNode;
+		        //音频结束事件，绑定_audioEnd函数
         		bufferSouceNode.onended = function() {
             		that._audioEnd(that);
         		};
@@ -251,7 +241,7 @@
 			    capHeight = 2,
             	capStyle = '#fff',
 			    meterNum = Math.round(cwidth / (meterWidth + gap)),	
-			    capYPositionArray = [],		//store the vertical position of hte caps for the preivous frame
+			    capYPositionArray = [],		//保存能力柱帽子的先前位置
 			    ctx = canvas.getContext('2d');
 			    
 				//定义一个渐变样式用于画图
@@ -265,7 +255,7 @@
 			    	var array = new Uint8Array(analyser.frequencyBinCount);
 			    	analyser.getByteFrequencyData(array);
 			    	if (that.status === 0) {
-		                //fix when some sounds end the value still not back to zero
+		                //曲终时能量帽的归零
 		                for (var i = array.length - 1; i >= 0; i--) {
 		                    array[i] = 0;
 		                };
@@ -274,11 +264,13 @@
 		                    allCapsReachBottom = allCapsReachBottom && (capYPositionArray[i] === 0);
 		                };
 		                if (allCapsReachBottom) {
-		                    cancelAnimationFrame(that.animationId); //since the sound is top and animation finished, stop the requestAnimation to prevent potential memory leak,THIS IS VERY IMPORTANT!
+		                	//！！！音频播完动画结束了！必须手动停止动画以防内存泄露!非常重要！！！
+		                    cancelAnimationFrame(that.animationId); 
 		                    return;
 		                };
 	            	};
-	            	var step = Math.round(array.length / meterNum); //sample limited data from the total array
+	            	//计算步长
+	            	var step = Math.round(array.length / meterNum); 
             		ctx.clearRect(0, 0, cwidth, cheight);
 			    	for (var i = 0; i < meterNum; i++) {
 		                var value = array[i * step] * cheight / 256;
@@ -286,14 +278,15 @@
 		                    capYPositionArray.push(value);
 		                };
 		                ctx.fillStyle = capStyle;
-		                //draw the cap, with transition effect
+		                //绘制能量帽
 		                if (value < capYPositionArray[i]) {
 		                    ctx.fillRect(i * (meterWidth + gap), cheight - (--capYPositionArray[i]), meterWidth, capHeight);
 		                } else {
 		                    ctx.fillRect(i * (meterWidth + gap), cheight - value, meterWidth, capHeight);
 		                    capYPositionArray[i] = value;
 		                };
-		                ctx.fillStyle = gradient; //set the filllStyle to gradient for a better look
+		                //使用渐变填充得到更好的效果
+		                ctx.fillStyle = gradient; 
 		                ctx.fillRect(i * (meterWidth + gap), cheight - value + capHeight, meterWidth, cheight); //the meter
 		            }
 			    	//这个与后面一句区别在this和that。严格模式下播放时this为undefined，一般模式下this指向window。
@@ -309,30 +302,31 @@
 				canvas = document.getElementById('drawCanvas'),
 			    cwidth = canvas.width,
 			    cheight = canvas.height,
-			    num = 50,		//能量球的数量
+			    num = cwidth > 500 ? 50 : 30,		//能量球的数量
 			    ctx = canvas.getContext('2d');
-			    
+			    		    
 				var random = function (m, n) {
 					return Math.round(Math.random()*(n - m) + m);
 				};
 				for (var i = 0; i < num; i++) {
 					var x = random(0, cwidth),
 						y = random(0, cheight),
-						color = "rgba(" + random(0, 255) + "," + random(0, 255) + "," + random(0, 255) + ",0)";
+						color = "rgba(" + random(30, 200) + "," + random(30, 200) + "," + random(30, 200) + ",0)";
 					that.visualizer.push({
 						x: x,
 						y: y,
-						dy: Math.random() + 0.1,
+						dy: Math.random() + 0.1,	//返回大于0.1的数据，防止静止
 						color: color,
 						radius: 30
 					});
 				}
 				
 				var drawMeter = function() {
+					//创建8位整数数组保存频谱数据
 			    	var array = new Uint8Array(analyser.frequencyBinCount);
 			    	analyser.getByteFrequencyData(array);
 			    	if (that.status === 0) {
-		                //fix when some sounds end the value still not back to zero
+		                //能量球归零
 		                for (var i = array.length - 1; i >= 0; i--) {
 		                    array[i] = 0;
 		                };
@@ -341,40 +335,46 @@
 		                    allBallstoZero = allBallstoZero && ( that.visualizer[i].radius < 1);
 		                };
 		                if (allBallstoZero) {
-		                    cancelAnimationFrame(that.animationId); //since the sound is top and animation finished, stop the requestAnimation to prevent potential memory leak,THIS IS VERY IMPORTANT!
+		                	//！！！音频播完动画结束了！必须手动停止动画以防内存泄露!非常重要！！！
+		                    cancelAnimationFrame(that.animationId); 
 		                    return;
 		                };
 	            	};
-			    	var step = Math.round(array.length / (num + 10)), //sample limited data from the total array
-			    		cwidth = canvas.width,
-			    		cheight = canvas.height;
+			    	var cwidth = canvas.width,
+			    		cheight = canvas.height,  //画布宽高的重复声明是为了保证动画的自适应屏幕尺寸
+			    		num = cwidth > 500 ? 50 : 30,	//能量球的数量也一样自适应
+			    		step = Math.round(array.length / (num + 10));  //计算步长
 			    	ctx.clearRect(0, 0, cwidth, cheight);
 			    	for (var n = 0; n < num; n++) {
 			    		var s = that.visualizer[n];
-			    		s.radius = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 25 : cheight / 18));
+			    		//能量球半径，与画布大小关联起来
+			    		s.radius = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 20 : cheight / 15));
+			    		//加了一点内发光的效果
 			    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.radius);
 			    		gradient.addColorStop(0, "#fff");
-//			    		gradient.addColorStop(0.6, "#D0C2C2");
-//			    		gradient.addColorStop(0.5, "#D8C3C6");
 			    		gradient.addColorStop(0.5,"#D2BEC0");
 			    		gradient.addColorStop(0.75, s.color.substring(0, s.color.lastIndexOf(","))+",0.4)");
 			    		gradient.addColorStop(1, s.color);
 			    		ctx.fillStyle = gradient;
 			    		ctx.beginPath();
 			    		ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2, true);
-//			    		ctx.closePath();
 						ctx.fill();
-			    		s.y = s.y - 2 * s.dy;
+			    		s.y = s.y - 2 * s.dy;	//上飘效果
+			    		//到顶部后返回底部，随机化
 			    		if ((s.y <= 0)&&(that.status != 0)) {
 			    			s.y = cheight;
 			    			s.x = random(0, cwidth);
+			    			s.color = "rgba(" + random(30, 200) + "," + random(30, 200) + "," + random(30, 200) + ",0)";
 			    		}
 			    	}
+			    	//严格模式下播放时this为undefined，一般模式下this指向window。
+			    	//_visualize，_audioEnd这些为MV的方法，所以函数内部this指向MV，但其内部嵌套的函数并非MV的函数，其原型为window！
+			    	//所以在进入嵌套函数内部时，this已经被改变了，需要用一个that来保存this的指向对象MV
 				 	that.animationId = requestAnimationFrame(drawMeter); 
 		        };
 		        this.animationId = requestAnimationFrame(drawMeter);
 			},
-			
+			//音频播放结束，绑定了onended事件
 			_audioEnd: function(instance) {
 		        if (this.forceStop) {
 		            this.forceStop = false;
@@ -386,7 +386,7 @@
 		        document.getElementById('info').innerHTML = text;
 		        document.getElementById('uploader').value = '';
 		    },
-		    
+		    //信息输出
 			_updateInfo: function(text, processing) {
 		        var infoBar = document.getElementById('info'),
 		            dots = '...',
@@ -397,7 +397,7 @@
 		            clearTimeout(this.infoUpdateId);
 		        };
 		        if (processing) {
-		            //animate dots at the end of the info text
+		            //末尾3个点号的小动画
 		            var animateDot = function() {
 		                if (i > 3) {
 		                    i = 0
