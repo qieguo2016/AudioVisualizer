@@ -1,0 +1,36 @@
+html,
+body {
+	margin: 0;
+	padding: 0;
+	font-family: arial, "Microsoft YaHei";
+	font-size: 16px;
+	background-color: #272822;
+	color: #FEFEFE;
+}
+
+div.msg {
+	position: fixed;
+	left: 5px;
+	top: 5px;
+}
+
+#info {
+	padding: 0;
+	margin: 1px;
+	-webkit-user-select:none
+}
+
+#fileIn {
+	text-decoration: underline;
+	color: #36B953;
+	-webkit-user-select:none
+}
+
+#fileIn:hover {
+	cursor: pointer;
+	color: #FF00B4;
+}
+
+#uploader {
+	display: none;
+}
