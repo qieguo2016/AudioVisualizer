@@ -9,8 +9,12 @@ You can see the the demo on the project page: http://qieguo2016.github.io/AudioV
   If you visit this demo on PC, Move Your Mouse to capture the balls!
   
   If you visit this demo on mobile device, touch the ball and move them!
+  
+For more infomation, please visit my blog: http://www.cnblogs.com/qieguo/p/5405303.html
 
-This demo is base on wayou Liu's article. You can see his page: http://wayou.github.io/MeowmeowPlayer/
+Reference: 1.http://wayou.github.io/MeowmeowPlayer/
+
+           2.https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API
 
 Screenshot
 ---
