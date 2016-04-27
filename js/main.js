@@ -79,10 +79,10 @@ window.onload = function() {
 			var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,1)';
 			gradient.addColorStop(0, 'hsla(0,0%,100%,0.8)');
 			gradient.addColorStop(0.6, color);
-	    	gradient.addColorStop(1, 'hsla(0,0%,100%,0)');
-	    	//内发光，圆外变色
-//	    	var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,0)';
-//	    	gradient.addColorStop(0, 'hsla(0,0%,100%,1)');
+	    		gradient.addColorStop(1, 'hsla(0,0%,100%,0)');
+	    		//内发光，圆外变色
+//	    		var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,0)';
+//	    		gradient.addColorStop(0, 'hsla(0,0%,100%,1)');
 //			gradient.addColorStop(0.6, 'hsla(0,5%,98%,0.8)');
 //			gradient.addColorStop(1, color);
     		ctx.fillStyle = gradient;
