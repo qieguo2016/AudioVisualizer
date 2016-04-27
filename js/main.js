@@ -73,21 +73,21 @@ window.onload = function() {
 		//判断播放状态，不播放的时候才触发
 		if (mymv.status === 0) {
 			var ctx = canvas.getContext('2d');
-			var gradient = ctx.createRadialGradient(e.pageX, e.pageY, 0, e.pageX, e.pageY, 50);
+			var gradient = ctx.createRadialGradient(e.pageX, e.pageY, 0, e.pageX, e.pageY, 30);
 			var random = function (m, n) { return Math.round(Math.random()*(n - m) + m); };
 			//内发光，圆内变色
 			var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,1)';
 			gradient.addColorStop(0, 'hsla(0,0%,100%,0.8)');
 			gradient.addColorStop(0.6, color);
-	    	gradient.addColorStop(1, 'hsla(0,0%,100%,0)');
-	    	//内发光，圆外变色
-//	    	var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,0)';
-//	    	gradient.addColorStop(0, 'hsla(0,0%,100%,1)');
+	    		gradient.addColorStop(1, 'hsla(0,0%,100%,0)');
+	    		//内发光，圆外变色
+//	    		var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,0)';
+//	    		gradient.addColorStop(0, 'hsla(0,0%,100%,1)');
 //			gradient.addColorStop(0.6, 'hsla(0,5%,98%,0.8)');
 //			gradient.addColorStop(1, color);
     		ctx.fillStyle = gradient;
     		ctx.beginPath();
-    		ctx.arc(e.pageX, e.pageY, 50, 0, Math.PI*2, true);
+    		ctx.arc(e.pageX, e.pageY, 30, 0, Math.PI*2, true);
 			ctx.fill();
 		}
 	};
