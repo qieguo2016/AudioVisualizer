@@ -9,7 +9,7 @@
  *	Reference: 1)参考了刘哇勇的文章并使用了一部分代码。http://www.cnblogs.com/Wayou/p/html5_audio_api_visualizer.html
  * 			   2)Visualizations with Web Audio API(官方原版，强力推荐)
  * 			     https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API
- *  Licensed under the MIT，转载请注明出处！http://www.cnblogs.com/qieguo/p/5405303.html
+ *  Licensed under the MIT，转载使用请注明出处！http://www.cnblogs.com/qieguo/p/5405303.html
  *--------------------------------------------------------------------
  */
 
@@ -69,20 +69,25 @@ window.onload = function() {
 	}, false);
 	
 	//测试绘图样式
-	canvas.onclick = function (ev) {
+	canvas.onclick = function (e) {
 		//判断播放状态，不播放的时候才触发
 		if (mymv.status === 0) {
 			var ctx = canvas.getContext('2d');
-			var gradient = ctx.createRadialGradient(ev.pageX, ev.pageY, 0, ev.pageX, ev.pageY, 30);
+			var gradient = ctx.createRadialGradient(e.pageX, e.pageY, 0, e.pageX, e.pageY, 50);
 			var random = function (m, n) { return Math.round(Math.random()*(n - m) + m); };
-			var color = "rgba(" + random(30, 200) + "," + random(30, 200) + "," + random(30, 200) + ",0)";
-    		gradient.addColorStop(0, "#fff");
-			gradient.addColorStop(0.5,"#D2BEC0");
-			gradient.addColorStop(0.75, color.substring(0, color.lastIndexOf(","))+",0.4)");
-	    	gradient.addColorStop(1, color);
+			//内发光，圆内变色
+			var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,1)';
+			gradient.addColorStop(0, 'hsla(0,0%,100%,0.8)');
+			gradient.addColorStop(0.6, color);
+	    	gradient.addColorStop(1, 'hsla(0,0%,100%,0)');
+	    	//内发光，圆外变色
+//	    	var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,0)';
+//	    	gradient.addColorStop(0, 'hsla(0,0%,100%,1)');
+//			gradient.addColorStop(0.6, 'hsla(0,5%,98%,0.8)');
+//			gradient.addColorStop(1, color);
     		ctx.fillStyle = gradient;
     		ctx.beginPath();
-    		ctx.arc(ev.pageX, ev.pageY, 30, 0, Math.PI*2, true);
+    		ctx.arc(e.pageX, e.pageY, 50, 0, Math.PI*2, true);
 			ctx.fill();
 		}
 	};
@@ -102,6 +107,8 @@ var MV = function() {
 	this.animationId = null;	//动画ID
 	this.source = null;			//流媒体的源
 	this.visualizer = [];		//频谱表现形式，包含x,y,dy,color,radius
+	this.canvas = null;		//画布
+	this.loader = null;		//进度条
 };
 
 //定义MV对象方法，原型方式
@@ -117,10 +124,16 @@ MV.prototype = {
 			alert('!Your browser does not support AudioContext, Please change to Chrome or Firefox!');
 			console.log(err);
 		};
+		
 		//隐藏文件输入控件，通过fileIn文本的click事件调用文件输入控件
 		var that = this,
-			btn = document.getElementById("fileIn"),
-			audioInput = document.getElementById("uploader");
+			btn = document.getElementById('fileIn'),
+			audioInput = document.getElementById('uploader');
+			
+		this.canvas = document.getElementById('drawCanvas');
+		this.loader = new lightLoader(this.canvas, this.canvas.width, this.canvas.height - 1);
+		setupRAF();  //当浏览器不支持requestAnimationFrame的时候设置个备胎
+		
 		btn.onclick = function () { audioInput.click(); };
 		//监控文本输入控件的改变，判断是否读入文件或者切换文件
 		audioInput.onchange = function() {
@@ -129,13 +142,21 @@ MV.prototype = {
 			if (audioInput.files.length !== 0) {
 				//仅获取文件列中的第一个文件
 				that.files = audioInput.files[0];
-				that.fileName = that.files.name;
+				that.fileName = audioInput.files[0].name;
 				if (that.status === 1) {
 					//正在播放的时候切换文件，需要强制停止，将forceStop置为true
 					that.forceStop = true;
+					//停止前一首歌曲
+			        if (that.animationId !== null) {
+			            cancelAnimationFrame(that.animationId);
+			        }
+					if (that.source !== null) {
+            			that.source.stop(0);
+        			}
 				};
 				//当文件准备好的时候，开始读入
 				that._read();
+				that.loader.init();
 			};
 		};
 	},
@@ -155,6 +176,7 @@ MV.prototype = {
 			that.ac.decodeAudioData(fileResult, function(buffer) {
 				that._updateInfo('Decode succussfully,start the visualizer', true);
 				//转到播放和分析环节
+				that.loader.stop();
 				that._control(that.ac, buffer);	
 			}, function(err) {
 				alert('!Fail to decode the file');
@@ -207,16 +229,15 @@ MV.prototype = {
 	
 	_visualize: function(analyser) {
 		var that = this,
-		canvas = document.getElementById('drawCanvas'),
-	    cwidth = canvas.width,
-	    cheight = canvas.height - 2,    //底部留一点余白
+	    	cwidth = this.canvas.width,
+	    	cheight = this.canvas.height - 2,    //底部留一点余白
 	    meterWidth = 10, //能量条的宽度
 	    gap = 2, //能量条间的间距
 	    capHeight = 2,
     	capStyle = '#fff',
 	    meterNum = Math.round(cwidth / (meterWidth + gap)),	
 	    capYPositionArray = [],		//保存能力柱帽子的先前位置
-	    ctx = canvas.getContext('2d');
+	    ctx = this.canvas.getContext('2d');
 	    
 		//定义一个渐变样式用于画图
 		var gradient = ctx.createLinearGradient(0, 0, 0, cheight);
@@ -273,11 +294,10 @@ MV.prototype = {
 	
 	_visualize_flow: function(analyser) {
 		var that = this,
-		canvas = document.getElementById('drawCanvas'),
-	    cwidth = canvas.width,
-	    cheight = canvas.height,
+	    cwidth = this.canvas.width,
+	    cheight = this.canvas.height,
 	    num = cwidth > 500 ? 50 : 30,		//能量球的数量
-	    ctx = canvas.getContext('2d');
+	    ctx = this.canvas.getContext('2d');
 	    		    
 		var random = function (m, n) {
 			return Math.round(Math.random()*(n - m) + m);
@@ -285,7 +305,7 @@ MV.prototype = {
 		for (var i = 0; i < num; i++) {
 			var x = random(0, cwidth),
 				y = random(0, cheight),
-				color = "rgba(" + random(30, 200) + "," + random(30, 200) + "," + random(30, 200) + ",0)";
+				color= 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,1)';
 			that.visualizer.push({
 				x: x,
 				y: y,
@@ -314,21 +334,22 @@ MV.prototype = {
                     return;
                 };
         	};
-	    	var cwidth = canvas.width,
-	    		cheight = canvas.height,  //画布宽高的重复声明是为了保证动画的自适应屏幕尺寸
+	    	var cwidth = that.canvas.width,
+	    		cheight = that.canvas.height,  //画布宽高的重复声明是为了保证动画的自适应屏幕尺寸
 	    		num = cwidth > 500 ? 50 : 30,	//能量球的数量也一样自适应
 	    		step = Math.round(array.length / (num + 10));  //计算步长
 	    	ctx.clearRect(0, 0, cwidth, cheight);
 	    	for (var n = 0; n < num; n++) {
 	    		var s = that.visualizer[n];
 	    		//能量球半径，与画布大小关联起来
-	    		s.radius = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 20 : cheight / 15));
-	    		//加了一点内发光的效果
+	    		s.radius = Math.round(array[n * step] / 256 * (cwidth > cheight ? cwidth / 22 : cheight / 16));
+	    		//加了一点模糊发光的效果
 	    		var gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.radius);
-	    		gradient.addColorStop(0, "#fff");
-	    		gradient.addColorStop(0.5,"#D2BEC0");
-	    		gradient.addColorStop(0.75, s.color.substring(0, s.color.lastIndexOf(","))+",0.4)");
-	    		gradient.addColorStop(1, s.color);
+	    		gradient.addColorStop(0, 'hsla(0,0%,100%,0.8)');
+	    		gradient.addColorStop(0.6, s.color);
+	    		gradient.addColorStop(1, 'hsla(0,0%,100%,0)');
+//	    		gradient.addColorStop(0.6, 'hsla(0,0%,100%,1)');
+//				gradient.addColorStop(1, s.color);
 	    		ctx.fillStyle = gradient;
 	    		ctx.beginPath();
 	    		ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2, true);
@@ -338,7 +359,7 @@ MV.prototype = {
 	    		if ((s.y <= 0)&&(that.status != 0)) {
 	    			s.y = cheight;
 	    			s.x = random(0, cwidth);
-	    			s.color = "rgba(" + random(30, 200) + "," + random(30, 200) + "," + random(30, 200) + ",0)";
+	    			s.color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,1)';
 	    		}
 	    	}
 	    	//严格模式下播放时this为undefined，一般模式下this指向window。
@@ -346,7 +367,7 @@ MV.prototype = {
 	    	//所以在进入嵌套函数内部时，this已经被改变了，需要用一个that来保存this的指向对象MV
 		 	that.animationId = requestAnimationFrame(drawMeter); 
         };
-        this.animationId = requestAnimationFrame(drawMeter);
+        this.animationId = requestAnimationFrame(drawMeter); //启动动画
 	},
 	//音频播放结束，绑定了onended事件
 	_audioEnd: function(instance) {
