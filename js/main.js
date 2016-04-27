@@ -73,7 +73,7 @@ window.onload = function() {
 		//判断播放状态，不播放的时候才触发
 		if (mymv.status === 0) {
 			var ctx = canvas.getContext('2d');
-			var gradient = ctx.createRadialGradient(e.pageX, e.pageY, 0, e.pageX, e.pageY, 50);
+			var gradient = ctx.createRadialGradient(e.pageX, e.pageY, 0, e.pageX, e.pageY, 30);
 			var random = function (m, n) { return Math.round(Math.random()*(n - m) + m); };
 			//内发光，圆内变色
 			var color = 'hsla(' + random(0, 360) + ',' + '100%,' + random(50, 60) + '%,1)';
@@ -87,7 +87,7 @@ window.onload = function() {
 //			gradient.addColorStop(1, color);
     		ctx.fillStyle = gradient;
     		ctx.beginPath();
-    		ctx.arc(e.pageX, e.pageY, 50, 0, Math.PI*2, true);
+    		ctx.arc(e.pageX, e.pageY, 30, 0, Math.PI*2, true);
 			ctx.fill();
 		}
 	};

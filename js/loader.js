@@ -150,7 +150,7 @@ var lightLoader = function(c, cw, ch){
 	
 	
 	this.stop = function(){
-		this.clearCanvas();
+		this.clearCanvas();		
 		window.cancelAnimationFrame(this.raf);
 	}
 
